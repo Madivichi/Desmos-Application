@@ -1,2 +1,236 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graph Genius: Interactive Math Visualizer</title>
+  <script src="https://www.desmos.com/api/v1.7/calculator.js?apiKey=dcb31709b452b1cf9dc26972add0fda6"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Poppins:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #6a11cb, #2575fc);
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      max-width: 1200px;
+      width: 90%;
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #fff;
+    }
+    .input-section {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    input[type="text"], button {
+      padding: 12px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+    }
+    input[type="text"] {
+      width: 300px;
+      background: rgba(255, 255, 255, 0.8);
+      color: #333;
+    }
+    button {
+      background-color: #ff6f61;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #ff3b2f;
+    }
+    #calculator {
+      width: 100%;
+      height: 500px;
+      margin-top: 20px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.9);
+    }
+    .history {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .history h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+    .history ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    .history li {
+      padding: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .history li:last-child {
+      border-bottom: none;
+    }
+    .history button {
+      background: #ff6f61;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .history button:hover {
+      background: #ff3b2f;
+    }
+    .settings {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 12px;
+    }
+    .settings h2 {
+      margin-top: 0;
+      font-size: 1.5rem;
+      color: #fff;
+    }
+    .settings label {
+      font-weight: 500;
+      margin-right: 10px;
+    }
+    .settings input[type="number"], .settings input[type="checkbox"] {
+      padding: 8px;
+      border-radius: 4px;
+      border: none;
+      background: rgba(255, 255, 255, 0.8);
+      color: #333;
+    }
+    .settings button {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Graph Genius: Interactive Math Visualizer</h1>
+    <div class="input-section">
+      <input type="text" id="functionInput" placeholder="Enter a function (e.g., y = x^2 + 3x - 4)">
+      <button onclick="addFunction()">Visualize</button>
+    </div>
+
+    <div id="calculator"></div>
+
+    <div class="history">
+      <h2>Function History</h2>
+      <ul id="historyList"></ul>
+    </div>
+
+    <div class="settings">
+      <h2>Graph Settings</h2>
+      <label for="xMin">X Min:</label>
+      <input type="number" id="xMin" value="-10">
+      <label for="xMax">X Max:</label>
+      <input type="number" id="xMax" value="10">
+      <label for="yMin">Y Min:</label>
+      <input type="number" id="yMin" value="-10">
+      <label for="yMax">Y Max:</label>
+      <input type="number" id="yMax" value="10">
+      <label for="gridToggle">Show Grid:</label>
+      <input type="checkbox" id="gridToggle" checked>
+      <button onclick="updateSettings()">Apply Settings</button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Desmos calculator
+    const calculator = Desmos.GraphingCalculator(document.getElementById('calculator'), {
+      keypad: false,
+      expressions: false
+    });
+
+    let functionHistory = [];
+
+    // Function to add a new function to the graph
+    function addFunction() {
+      const input = document.getElementById('functionInput').value.trim();
+
+      if (!input) {
+        alert("Please enter a function!");
+        return;
+      }
+
+      try {
+        // Add function to Desmos
+        const id = `graph${functionHistory.length + 1}`;
+        calculator.setExpression({ id, latex: input });
+
+        // Add function to history
+        functionHistory.push({ id, input });
+        updateHistory();
+
+        // Clear input field
+        document.getElementById('functionInput').value = "";
+      } catch (error) {
+        alert("Invalid function! Please check your input.");
+      }
+    }
+
+    // Function to update the function history list
+    function updateHistory() {
+      const historyList = document.getElementById('historyList');
+      historyList.innerHTML = functionHistory
+        .map((func, index) => `
+          <li>
+            ${func.input}
+            <button onclick="removeFunction(${index})">Remove</button>
+          </li>
+        `)
+        .join("");
+    }
+
+    // Function to remove a function from the graph and history
+    function removeFunction(index) {
+      const func = functionHistory[index];
+      calculator.removeExpression({ id: func.id });
+      functionHistory.splice(index, 1);
+      updateHistory();
+    }
+
+    // Function to update graph settings
+    function updateSettings() {
+      const xMin = parseFloat(document.getElementById('xMin').value);
+      const xMax = parseFloat(document.getElementById('xMax').value);
+      const yMin = parseFloat(document.getElementById('yMin').value);
+      const yMax = parseFloat(document.getElementById('yMax').value);
+      const gridToggle = document.getElementById('gridToggle').checked;
+
+      calculator.setMathBounds({ left: xMin, right: xMax, bottom: yMin, top: yMax });
+      calculator.updateSettings({ showGrid: gridToggle });
+    }
+  </script>
+</body>
+</html>
